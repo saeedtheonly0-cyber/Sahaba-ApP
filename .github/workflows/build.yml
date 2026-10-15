@@ -1,82 +1,103 @@
-name: Build Sahaba IPA
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <!-- ضبط أبعاد الشاشة لمنع التكبير ومنع التداخل مع شريط الآيفون -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- إعدادات تجعل الصفحة تفتح كتطبيق كامل الشاشة (PWA/IPA Wrapper) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <title>سحابة</title>
 
-on:
-  workflow_dispatch:
+  <style>
+    /* إعادة ضبط القياسات الأساسية */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
 
-jobs:
-  build:
-    runs-on: macos-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+    body {
+      background-color: #0f172a; /* اللون الداكن للحديث */
+      color: #ffffff;
+      height: 100vh;
+      height: 100dvh; /* لدعم الأبعاد الديناميكية في iOS */
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: env(safe-area-inset-top, 20px);
+      padding-bottom: env(safe-area-inset-bottom, 20px);
+      overflow: hidden;
+      touch-action: manipulation;
+    }
 
-      - name: Build WebKit App Payload
-        run: |
-          mkdir -p Payload/Sahaba.app
-          
-          # إنشاء ملف Info.plist المتوافق مع iOS
-          cat << 'EOF' > Payload/Sahaba.app/Info.plist
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>CFBundleIdentifier</key>
-              <string>com.doltk.sahaba</string>
-              <key>CFBundleName</key>
-              <string>Sahaba</string>
-              <key>CFBundleDisplayName</key>
-              <string>سحابة</string>
-              <key>CFBundleExecutable</key>
-              <string>Sahaba</string>
-              <key>CFBundlePackageType</key>
-              <string>APPL</string>
-              <key>CFBundleShortVersionString</key>
-              <string>1.0</string>
-              <key>CFBundleVersion</key>
-              <string>1</string>
-              <key>MinimumOSVersion</key>
-              <string>15.0</string>
-          </dict>
-          </plist>
-          EOF
+    /* رأس الصفحة */
+    header {
+      text-align: center;
+      margin-top: 20px;
+    }
 
-          # كتابة وتجميع الكود التنفيذي بسيط
-          cat << 'EOF' > main.m
-          #import <UIKit/UIKit.h>
-          #import <WebKit/WebKit.h>
+    header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
 
-          int main(int argc, char * argv[]) {
-              @autoreleasepool {
-                  return UIApplicationMain(argc, argv, nil, @"AppDelegate");
-              }
-          }
+    header p {
+      font-size: 15px;
+      color: #94a3b8;
+      margin-top: 6px;
+    }
 
-          @interface AppDelegate : UIResponder <UIApplicationDelegate>
-          @property (strong, nonatomic) UIWindow *window;
-          @end
+    /* دائرة العداد الرئيسية */
+    .timer-container {
+      position: relative;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      border: 6px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    }
 
-          @implementation AppDelegate
-          - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-              self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
-              UIViewController *vc = [[UIViewController alloc] init];
-              WKWebView *webView = [[WKWebView alloc] initWithFrame:vc.view.bounds];
-              [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://shaba0.netlify.app"]]];
-              vc.view = webView;
-              self.window.rootViewController = vc;
-              [self.window makeKeyAndVisible];
-              return YES;
-          }
-          @end
-          EOF
+    .timer-days {
+      font-size: 64px;
+      font-weight: bold;
+      line-height: 1;
+    }
 
-          # تجميع الكود بنجاح لنظام iOS
-          clang -isysroot $(xcrun --sdk iphoneos --show-sdk-path) -arch arm64 -miphoneos-version-min=15.0 -fobjc-arc -framework UIKit -framework WebKit main.m -o Payload/Sahaba.app/Sahaba
+    .timer-label {
+      font-size: 16px;
+      color: #94a3b8;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
 
-          # ضغط الحزمة إلى IPA
-          zip -r Sahaba.ipa Payload
+    .timer-time {
+      font-size: 18px;
+      letter-spacing: 2px;
+      color: #cbd5e1;
+    }
 
-      - name: Upload IPA Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: Sahaba-IPA
-          path: Sahaba.ipa
+    /* زر أستنجد / المساعدة */
+    .action-container {
+      width: 90%;
+      max-width: 380px;
+      text-align: center;
+    }
+
+    .sos-button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135
