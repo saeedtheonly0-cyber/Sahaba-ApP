@@ -14,30 +14,30 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 18
 
-      - name: Install Cordova
-        run: npm install -g cordova
-
-      - name: Create Cordova App
+      - name: Install Dependencies
         run: |
-          cordova create SahabaApp com.sahaba.app Sahaba
-          cd SahabaApp
-          rm -rf www/*
-          cp -R ../* www/ || true
-          cordova platform add ios
+          npm init -y
+          npm install @capacitor/core @capacitor/cli @capacitor/ios
+          npx cap init Sahaba com.sahaba.app --web-dir .
+          npx cap add ios
 
-      - name: Build iOS Executable Package
+      - name: Build iOS App Unsigned
         run: |
-          cd SahabaApp
-          cordova build ios --emulator
-          cd platforms/ios/build/emulator
+          npx cap sync ios
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath build archive -archivePath build/App.xcarchive
           mkdir -p Payload
-          cp -R Sahaba.app Payload/
-          zip -r ../../../../Sahaba.ipa Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app Payload/
+          zip -r Sahaba.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sahaba-IPA
-          path: Sahaba.ipa
+          path: ios/App/Sahaba.ipa
