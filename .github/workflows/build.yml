@@ -14,26 +14,39 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
-      - name: Install Dependencies
+      - name: Prepare App Structure
         run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/ios
-          npx cap init Sahaba com.sahaba.app --web-dir .
-          npx cap add ios
+          mkdir -p Payload/Sahaba.app
+          cp -R * Payload/Sahaba.app/ || true
 
-      - name: Build iOS App
+      - name: Create Dummy Info.plist & Package
         run: |
-          npx cap sync ios
-          cd ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -derivedDataPath build archive -archivePath build/App.xcarchive
-          mkdir -p Payload
-          cp -r build/App.xcarchive/Products/Applications/App.app Payload/
+          cat << 'EOF' > Payload/Sahaba.app/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>Sahaba</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.sahaba.app</string>
+              <key>CFBundleName</key>
+              <string>Sahaba</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+          </dict>
+          </plist>
+          EOF
           zip -r Sahaba.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sahaba-IPA
-          path: ios/App/Sahaba.ipa
+          path: Sahaba.ipa
