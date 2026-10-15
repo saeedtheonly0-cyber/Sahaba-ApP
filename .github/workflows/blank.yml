@@ -1,30 +1,30 @@
 name: Build unsigned IPA
- 
+
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
- 
+
 jobs:
   build-ipa:
     runs-on: macos-latest
     timeout-minutes: 45
- 
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
- 
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
- 
+
       - name: Show toolchain versions
         run: |
           node -v
           npm -v
           xcodebuild -version
- 
+
       - name: Prepare www folder
         run: |
           test -f index.html || { echo "index.html not found in repo root"; exit 1; }
@@ -32,18 +32,18 @@ jobs:
           mkdir -p www
           cp index.html www/index.html
           cp icon.jpg www/icon.jpg
- 
+
       - name: Install Capacitor (v7, compatible with Node 20)
         run: |
           npm init -y
           npm install @capacitor/core@7 @capacitor/cli@7 @capacitor/ios@7
- 
+
       - name: Init Capacitor and add iOS platform
         run: |
           npx cap init "Sahaba" "com.sahaba.app" --web-dir=www
           npx cap add ios
           npx cap sync ios
- 
+
       - name: Set app display name and icon
         run: |
           plutil -replace CFBundleDisplayName -string "سحابة" ios/App/App/Info.plist
@@ -51,7 +51,7 @@ jobs:
           if [ -d "$ICON_DIR" ]; then
             sips -s format png -z 1024 1024 icon.jpg --out "$ICON_DIR/AppIcon-512@2x.png" || echo "Icon conversion skipped"
           fi
- 
+
       - name: Build iOS app without code signing
         run: |
           if [ -d ios/App/App.xcworkspace ]; then
@@ -69,7 +69,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
- 
+
       - name: Package IPA
         run: |
           APP_PATH="build/Build/Products/Release-iphoneos/App.app"
@@ -79,12 +79,10 @@ jobs:
           cp -R "$APP_PATH" Payload/
           zip -qry Sahaba.ipa Payload
           ls -lh Sahaba.ipa
- 
+
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
           name: Sahaba-ipa
           path: Sahaba.ipa
           if-no-files-found: error
- 
-
