@@ -10,40 +10,64 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Set up Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: 'latest-stable'
-
-      - name: Create WebKit App Project
+      - name: Create App Bundle Structure
         run: |
-          mkdir -p Sahaba
-          cat << 'EOF' > Sahaba/ViewController.swift
+          mkdir -p Payload/Sahaba.app
+          
+          # إنشاء ملف معلومات التطبيق الأساسي
+          cat << 'EOF' > Payload/Sahaba.app/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleIdentifier</key>
+              <string>com.doltk.sahaba</string>
+              <key>CFBundleName</key>
+              <string>Sahaba</string>
+              <key>CFBundleDisplayName</key>
+              <string>سحابة</string>
+              <key>CFBundleExecutable</key>
+              <string>Sahaba</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1.0</string>
+              <key>MinimumOSVersion</key>
+              <string>15.0</string>
+          </dict>
+          </plist>
+          EOF
+
+          # كتابة كود الشاشة وتوجيهها لرابط موقعك
+          cat << 'EOF' > main.swift
           import UIKit
           import WebKit
 
-          class ViewController: UIViewController, WKUIDelegate {
-              var webView: WKWebView!
-              override func loadView() {
-                  let webConfiguration = WKWebViewConfiguration()
-                  webView = WKWebView(frame: .zero, configuration: webConfiguration)
-                  webView.uiDelegate = self
-                  view = webView
-              }
-              override func viewDidLoad() {
-                  super.viewDidLoad()
-                  if let myURL = URL(string: "https://shaba0.netlify.app") {
-                      let myRequest = URLRequest(url: myURL)
-                      webView.load(myRequest)
+          class AppDelegate: UIResponder, UIApplicationDelegate {
+              var window: UIWindow?
+              func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+                  window = UIWindow(frame: UIScreen.main.bounds)
+                  let vc = UIViewController()
+                  let webView = WKWebView(frame: vc.view.bounds)
+                  if let url = URL(string: "https://shaba0.netlify.app") {
+                      webView.load(URLRequest(url: url))
                   }
+                  vc.view.addSubview(webView)
+                  window?.rootViewController = vc
+                  window?.makeKeyAndVisible()
+                  return true
               }
           }
+
+          _ = UIApplicationMain(CommandLine.argc, CommandLine.argv, nil, NSStringFromClass(AppDelegate.self))
           EOF
 
-      - name: Build Payload and Create IPA
-        run: |
-          mkdir -p Payload
-          # تحويل المشروع إلى IPA تلقائي
+          # تجميع التطبيق خصيصاً لأجهزة الآيفون
+          swiftc -target arm64-apple-ios15.0 -sdk $(xcrun --sdk iphoneos --show-sdk-path) -emit-executable -o Payload/Sahaba.app/Sahaba main.swift -framework UIKit -framework WebKit
+
+          # ضغط الملف بصيغة IPA النهائية
           zip -r Sahaba.ipa Payload
 
       - name: Upload IPA Artifact
