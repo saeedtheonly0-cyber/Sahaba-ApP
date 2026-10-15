@@ -16,11 +16,17 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install Dependencies
+      - name: Prepare Web Directory
+        run: |
+          mkdir -p www
+          # نقل ملفات المشروع إلى داخل مجلد www لتوافق Capacitor
+          find . -maxdepth 1 ! -name '.' ! -name '..' ! -name '.git' ! -name 'www' -exec mv {} www/ \;
+
+      - name: Install Dependencies & Init Capacitor
         run: |
           npm init -y
           npm install @capacitor/core @capacitor/cli @capacitor/ios
-          npx cap init Sahaba com.sahaba.app --web-dir .
+          npx cap init Sahaba com.sahaba.app --web-dir www
           npx cap add ios
 
       - name: Build iOS App Unsigned
